@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>熊本地震 現地調査WebGIS</title>
 
   <link
@@ -22,6 +23,15 @@
       width: 100%;
       height: 100%;
     }
+
+    .locate-button {
+      background: white;
+      border: 2px solid #777;
+      border-radius: 4px;
+      padding: 8px 10px;
+      font-size: 14px;
+      cursor: pointer;
+    }
   </style>
 </head>
 
@@ -29,19 +39,24 @@
 
 <div id="map"></div>
 
-<script
-  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
-</script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
 
-  // 熊本県南部付近を初期表示
+  // -----------------------------
+  // 地図
+  // -----------------------------
+
   const map = L.map('map').setView(
     [32.65, 130.73],
-    13
+    11
   );
 
-  // 国土地理院 標準地図
+
+  // -----------------------------
+  // 背景地図
+  // -----------------------------
+
   const gsiStd = L.tileLayer(
     'https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png',
     {
@@ -51,57 +66,153 @@
     }
   ).addTo(map);
 
-  // 01 地殻変動図
+
+  const gsiPale = L.tileLayer(
+    'https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png',
+    {
+      attribution:
+        '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">国土地理院</a>',
+      maxZoom: 18
+    }
+  );
+
+
+  // -----------------------------
+  // 地殻変動図 01～07
+  // -----------------------------
+
   const tile01 = L.tileLayer(
     './tiles/01/{z}/{x}/{y}.png',
     {
       minZoom: 12,
       maxZoom: 18,
-      opacity: 0.8
+      opacity: 0.85
     }
   ).addTo(map);
 
+
+  const tile02 = L.tileLayer(
+    './tiles/02/{z}/{x}/{y}.png',
+    {
+      minZoom: 12,
+      maxZoom: 18,
+      opacity: 0.85
+    }
+  );
+
+
+  const tile03 = L.tileLayer(
+    './tiles/03/{z}/{x}/{y}.png',
+    {
+      minZoom: 12,
+      maxZoom: 18,
+      opacity: 0.85
+    }
+  );
+
+
+  const tile04 = L.tileLayer(
+    './tiles/04/{z}/{x}/{y}.png',
+    {
+      minZoom: 12,
+      maxZoom: 18,
+      opacity: 0.85
+    }
+  );
+
+
+  const tile05 = L.tileLayer(
+    './tiles/05/{z}/{x}/{y}.png',
+    {
+      minZoom: 12,
+      maxZoom: 18,
+      opacity: 0.85
+    }
+  );
+
+
+  const tile06 = L.tileLayer(
+    './tiles/06/{z}/{x}/{y}.png',
+    {
+      minZoom: 12,
+      maxZoom: 18,
+      opacity: 0.85
+    }
+  );
+
+
+  const tile07 = L.tileLayer(
+    './tiles/07/{z}/{x}/{y}.png',
+    {
+      minZoom: 12,
+      maxZoom: 18,
+      opacity: 0.85
+    }
+  );
+
+
+  // -----------------------------
   // レイヤー切り替え
+  // -----------------------------
+
   const baseMaps = {
-    "地理院 標準地図": gsiStd
+    "地理院 標準地図": gsiStd,
+    "地理院 淡色地図": gsiPale
   };
 
+
   const overlayMaps = {
-    "01 地殻変動図": tile01
+    "01 地殻変動図": tile01,
+    "02 地殻変動図": tile02,
+    "03 地殻変動図": tile03,
+    "04 地殻変動図": tile04,
+    "05 地殻変動図": tile05,
+    "06 地殻変動図": tile06,
+    "07 地殻変動図": tile07
   };
+
 
   L.control.layers(
     baseMaps,
     overlayMaps,
     {
-      collapsed: false
+      collapsed: true
     }
   ).addTo(map);
 
+
+  // -----------------------------
   // 縮尺
+  // -----------------------------
+
   L.control.scale({
     imperial: false
   }).addTo(map);
 
-  // 現在地表示
+
+  // -----------------------------
+  // 現在地
+  // -----------------------------
+
   let currentMarker = null;
   let accuracyCircle = null;
+
 
   const locateControl = L.control({
     position: 'topleft'
   });
 
+
   locateControl.onAdd = function () {
 
     const button = L.DomUtil.create(
-      'button'
+      'button',
+      'locate-button'
     );
 
     button.innerHTML = '現在地';
-    button.style.padding = '8px';
-    button.style.background = 'white';
-    button.style.border = '2px solid #777';
-    button.style.cursor = 'pointer';
+
+    L.DomEvent.disableClickPropagation(button);
 
     L.DomEvent.on(
       button,
@@ -120,7 +231,9 @@
     return button;
   };
 
+
   locateControl.addTo(map);
+
 
   map.on(
     'locationfound',
@@ -143,6 +256,7 @@
         )
         .openPopup();
 
+
       accuracyCircle = L.circle(
         e.latlng,
         {
@@ -153,12 +267,15 @@
     }
   );
 
+
   map.on(
     'locationerror',
     function () {
+
       alert(
-        '現在地を取得できませんでした。位置情報の利用を許可してください。'
+        '現在地を取得できませんでした。iPhoneの位置情報の利用を許可してください。'
       );
+
     }
   );
 
