@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>熊本地震 現地調査WebGIS</title>
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="map"></div>
+
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+</script>
+
+<script>
+
+  // 熊本県南部付近を初期表示
+  const map = L.map('map').setView(
+    [32.65, 130.73],
+    13
+  );
+
+  // 国土地理院 標準地図
+  const gsiStd = L.tileLayer(
+    'https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png',
+    {
+      attribution:
+        '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">国土地理院</a>',
+      maxZoom: 18
+    }
+  ).addTo(map);
+
+  // 01 地殻変動図
+  const tile01 = L.tileLayer(
+    './tiles/01/{z}/{x}/{y}.png',
+    {
+      minZoom: 12,
+      maxZoom: 18,
+      opacity: 0.8
+    }
+  ).addTo(map);
+
+  // レイヤー切り替え
+  const baseMaps = {
+    "地理院 標準地図": gsiStd
+  };
+
+  const overlayMaps = {
+    "01 地殻変動図": tile01
+  };
+
+  L.control.layers(
+    baseMaps,
+    overlayMaps,
+    {
+      collapsed: false
+    }
+  ).addTo(map);
+
+  // 縮尺
+  L.control.scale({
+    imperial: false
+  }).addTo(map);
+
+  // 現在地表示
+  let currentMarker = null;
+  let accuracyCircle = null;
+
+  const locateControl = L.control({
+    position: 'topleft'
+  });
+
+  locateControl.onAdd = function () {
+
+    const button = L.DomUtil.create(
+      'button'
+    );
+
+    button.innerHTML = '現在地';
+    button.style.padding = '8px';
+    button.style.background = 'white';
+    button.style.border = '2px solid #777';
+    button.style.cursor = 'pointer';
+
+    L.DomEvent.on(
+      button,
+      'click',
+      function () {
+
+        map.locate({
+          setView: true,
+          maxZoom: 17,
+          enableHighAccuracy: true
+        });
+
+      }
+    );
+
+    return button;
+  };
+
+  locateControl.addTo(map);
+
+  map.on(
+    'locationfound',
+    function (e) {
+
+      if (currentMarker) {
+        map.removeLayer(currentMarker);
+      }
+
+      if (accuracyCircle) {
+        map.removeLayer(accuracyCircle);
+      }
+
+      currentMarker = L.marker(e.latlng)
+        .addTo(map)
+        .bindPopup(
+          '現在地<br>精度：約'
+          + Math.round(e.accuracy)
+          + ' m'
+        )
+        .openPopup();
+
+      accuracyCircle = L.circle(
+        e.latlng,
+        {
+          radius: e.accuracy
+        }
+      ).addTo(map);
+
+    }
+  );
+
+  map.on(
+    'locationerror',
+    function () {
+      alert(
+        '現在地を取得できませんでした。位置情報の利用を許可してください。'
+      );
+    }
+  );
+
+</script>
+
+</body>
+</html>
