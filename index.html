@@ -2,10 +2,8 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport"
-      content="width=device-width, initial-scale=1.0">
-
-<title>熊本地震 現地調査WebGIS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>熊本地震 現地調査WebGIS（公開版）</title>
 
 <link
   rel="stylesheet"
@@ -13,138 +11,144 @@
 />
 
 <style>
-
 html, body {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 #map {
-    width: 100%;
-    height: 100%;
+  width: 100%;
+  height: 100%;
 }
 
 .locate-button {
-    background: white;
-    border: 2px solid #777;
-    border-radius: 4px;
-    padding: 8px 10px;
-    font-size: 14px;
-    cursor: pointer;
+  background: white;
+  border: 2px solid #777;
+  border-radius: 6px;
+  padding: 9px 11px;
+  font-size: 14px;
+  cursor: pointer;
 }
 
+.leaflet-control-layers {
+  font-size: 14px;
+}
+
+.source-box {
+  position: absolute;
+  left: 8px;
+  bottom: 28px;
+  z-index: 1000;
+  max-width: min(82vw, 520px);
+  background: rgba(255,255,255,0.92);
+  border-radius: 6px;
+  padding: 7px 9px;
+  font-size: 11px;
+  line-height: 1.45;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.25);
+}
+
+.source-box a {
+  color: #0645ad;
+  text-decoration: underline;
+}
 </style>
 </head>
 
 <body>
-
 <div id="map"></div>
+
+<div class="source-box">
+  <strong>変位01～07：</strong>
+  国際航業株式会社「令和8年熊本地震」掲載画像を基に、
+  WebGIS表示用に位置情報を付与し地図タイル化しています。<br>
+  出典：
+  <a href="https://www.kkc.co.jp/disaster/2026/07/%e4%bb%a4%e5%92%8c8%e5%b9%b4%e7%86%8a%e6%9c%ac%e5%9c%b0%e9%9c%87/"
+     target="_blank" rel="noopener">
+    国際航業株式会社「令和8年熊本地震」
+  </a>
+  （原資料の著作権は国際航業株式会社に帰属）
+</div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-
-// ==========================================
 // 地図
-// ==========================================
+const map = L.map('map').setView([32.60, 130.72], 11);
 
-const map = L.map('map').setView(
-    [32.60, 130.72],
-    11
-);
-
-
-// ==========================================
 // 背景地図
-// ==========================================
-
-// 地理院 標準地図
 const gsiStd = L.tileLayer(
-    'https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png',
-    {
-        maxZoom: 18,
-        attribution:
-        '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">国土地理院</a>'
-    }
+  'https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png',
+  {
+    maxZoom: 18,
+    attribution:
+      '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">国土地理院</a>'
+  }
 ).addTo(map);
 
-
-// 地理院 淡色地図
 const gsiPale = L.tileLayer(
-    'https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png',
-    {
-        maxZoom: 18,
-        attribution:
-        '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">国土地理院</a>'
-    }
+  'https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png',
+  {
+    maxZoom: 18,
+    attribution:
+      '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">国土地理院</a>'
+  }
 );
 
-
-// 色別標高図（標高段彩図）
 const relief = L.tileLayer(
-    'https://cyberjapandata.gsi.go.jp/xyz/relief/{z}/{x}/{y}.png',
-    {
-        minZoom: 5,
-        maxNativeZoom: 15,
-        maxZoom: 18,
-        attribution:
-        '国土地理院（色別標高図）／海域部は海上保安庁海洋情報部の資料を使用'
-    }
+  'https://cyberjapandata.gsi.go.jp/xyz/relief/{z}/{x}/{y}.png',
+  {
+    minZoom: 5,
+    maxNativeZoom: 15,
+    maxZoom: 18,
+    attribution:
+      '国土地理院（色別標高図）'
+  }
 );
 
-
-// 赤色立体地図
 const sekishoku = L.tileLayer(
-    'https://cyberjapandata.gsi.go.jp/xyz/sekishoku/{z}/{x}/{y}.png',
-    {
-        minZoom: 2,
-        maxNativeZoom: 14,
-        maxZoom: 18,
-        attribution:
-        '国土地理院（赤色立体地図・アジア航測の特許を使用）'
-    }
+  'https://cyberjapandata.gsi.go.jp/xyz/sekishoku/{z}/{x}/{y}.png',
+  {
+    minZoom: 2,
+    maxNativeZoom: 14,
+    maxZoom: 18,
+    attribution:
+      '国土地理院（赤色立体地図）'
+  }
 );
-
-
-// ==========================================
-// 都市圏活断層図
-// 背景ではなく重ね合わせレイヤーとする
-// ==========================================
 
 const activeFault = L.tileLayer(
-    'https://cyberjapandata.gsi.go.jp/xyz/afm/{z}/{x}/{y}.png',
-    {
-        minZoom: 11,
-        maxNativeZoom: 16,
-        maxZoom: 18,
-        opacity: 0.85,
-        attribution:
-        '活断層図：国土地理院'
-    }
+  'https://cyberjapandata.gsi.go.jp/xyz/afm/{z}/{x}/{y}.png',
+  {
+    minZoom: 11,
+    maxNativeZoom: 16,
+    maxZoom: 18,
+    opacity: 0.85,
+    attribution:
+      '活断層図：国土地理院'
+  }
 );
 
-
-// ==========================================
-// 01～07 地殻変動図
-// GitHub Pages上の公開タイル
-// ==========================================
-
+// 公開タイル
 const tileBase =
-'https://yukie-geo-gis.github.io/kumamoto-map/tiles/';
+  'https://yukie-geo-gis.github.io/kumamoto-map/tiles/';
 
 function makeTile(number) {
-
-    return L.tileLayer(
-        tileBase + number + '/{z}/{x}/{y}.png',
-        {
-            minZoom: 12,
-            maxNativeZoom: 18,
-            maxZoom: 18,
-            opacity: 0.85
-        }
-    );
+  return L.tileLayer(
+    tileBase + number + '/{z}/{x}/{y}.png',
+    {
+      minZoom: 12,
+      maxNativeZoom: 18,
+      maxZoom: 18,
+      opacity: 0.85,
+      attribution:
+        '変位' + number +
+        '：国際航業株式会社「令和8年熊本地震」掲載画像を基に位置情報を付与'
+    }
+  );
 }
 
 const tile01 = makeTile('01');
@@ -155,158 +159,85 @@ const tile05 = makeTile('05');
 const tile06 = makeTile('06');
 const tile07 = makeTile('07');
 
-
-// 01だけ最初から表示
 tile01.addTo(map);
 
-
-// ==========================================
-// レイヤー一覧
-// ==========================================
-
+// レイヤー
 const baseMaps = {
-
-    "地理院 標準地図": gsiStd,
-
-    "地理院 淡色地図": gsiPale,
-
-    "色別標高図（標高段彩図）": relief,
-
-    "赤色立体地図": sekishoku
-
+  "地理院 標準地図": gsiStd,
+  "地理院 淡色地図": gsiPale,
+  "色別標高図（標高段彩図）": relief,
+  "赤色立体地図": sekishoku
 };
-
 
 const overlayMaps = {
-
-    "都市圏活断層図": activeFault,
-
-    "01 地殻変動図": tile01,
-
-    "02 地殻変動図": tile02,
-
-    "03 地殻変動図": tile03,
-
-    "04 地殻変動図": tile04,
-
-    "05 地殻変動図": tile05,
-
-    "06 地殻変動図": tile06,
-
-    "07 地殻変動図": tile07
-
+  "都市圏活断層図": activeFault,
+  "変位01": tile01,
+  "変位02": tile02,
+  "変位03": tile03,
+  "変位04": tile04,
+  "変位05": tile05,
+  "変位06": tile06,
+  "変位07": tile07
 };
 
-
 L.control.layers(
-    baseMaps,
-    overlayMaps,
-    {
-        collapsed: true
-    }
+  baseMaps,
+  overlayMaps,
+  { collapsed: true }
 ).addTo(map);
 
-
-// ==========================================
 // 縮尺
-// ==========================================
+L.control.scale({ imperial: false }).addTo(map);
 
-L.control.scale({
-    imperial: false
-}).addTo(map);
-
-
-// ==========================================
 // 現在地
-// ==========================================
-
 let currentMarker = null;
 let accuracyCircle = null;
 
-
-const locateControl = L.control({
-    position: 'topleft'
-});
-
+const locateControl = L.control({ position: 'topleft' });
 
 locateControl.onAdd = function () {
+  const button = L.DomUtil.create('button', 'locate-button');
+  button.innerHTML = '現在地';
 
-    const button = L.DomUtil.create(
-        'button',
-        'locate-button'
-    );
+  L.DomEvent.disableClickPropagation(button);
 
-    button.innerHTML = '現在地';
+  L.DomEvent.on(button, 'click', function () {
+    map.locate({
+      setView: true,
+      maxZoom: 17,
+      enableHighAccuracy: true
+    });
+  });
 
-    L.DomEvent.disableClickPropagation(button);
-
-    L.DomEvent.on(
-        button,
-        'click',
-        function () {
-
-            map.locate({
-                setView: true,
-                maxZoom: 17,
-                enableHighAccuracy: true
-            });
-
-        }
-    );
-
-    return button;
+  return button;
 };
-
 
 locateControl.addTo(map);
 
+map.on('locationfound', function (e) {
+  if (currentMarker) map.removeLayer(currentMarker);
+  if (accuracyCircle) map.removeLayer(accuracyCircle);
 
-map.on(
-    'locationfound',
-    function (e) {
+  currentMarker = L.marker(e.latlng)
+    .addTo(map)
+    .bindPopup(
+      '現在地<br>精度：約' +
+      Math.round(e.accuracy) +
+      ' m'
+    )
+    .openPopup();
 
-        if (currentMarker) {
-            map.removeLayer(currentMarker);
-        }
+  accuracyCircle = L.circle(
+    e.latlng,
+    { radius: e.accuracy }
+  ).addTo(map);
+});
 
-        if (accuracyCircle) {
-            map.removeLayer(accuracyCircle);
-        }
-
-        currentMarker =
-            L.marker(e.latlng)
-            .addTo(map)
-            .bindPopup(
-                '現在地<br>精度：約'
-                + Math.round(e.accuracy)
-                + ' m'
-            )
-            .openPopup();
-
-        accuracyCircle =
-            L.circle(
-                e.latlng,
-                {
-                    radius: e.accuracy
-                }
-            )
-            .addTo(map);
-
-    }
-);
-
-
-map.on(
-    'locationerror',
-    function () {
-
-        alert(
-            '現在地を取得できませんでした。位置情報の利用を許可してください。'
-        );
-
-    }
-);
-
+map.on('locationerror', function () {
+  alert(
+    '現在地を取得できませんでした。位置情報の利用を許可してください。'
+  );
+});
 </script>
 
 </body>
